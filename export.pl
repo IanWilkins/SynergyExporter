@@ -23,19 +23,19 @@
 
 =item B<exportDir E<lt>export directoryE<gt>>
 
-The filename to load the CR data into. This will override hardcoded setting for the variable $attachDir in the USER CONFIG SECTION 
+The filename to load the CR data into. This will override hardcoded setting for the variable $attachDir in the USER CONFIG SECTION
 
 =item B<user E<lt>user id to connect to Change and SynergyE<gt>>
 
-The user to connect to Change and Synergy with. This will override hardcoded setting for the variable $username in the USER CONFIG SECTION 
+The user to connect to Change and Synergy with. This will override hardcoded setting for the variable $username in the USER CONFIG SECTION
 
 =item B<password E<lt>password to connect to Change and SynergyE<gt>>
 
-The password to connect to Change and Synergy with. This will override hardcoded setting for the variable $password in the USER CONFIG SECTION 
+The password to connect to Change and Synergy with. This will override hardcoded setting for the variable $password in the USER CONFIG SECTION
 
 =item B<db E<lt>database path to export fromE<gt>>
 
-The database path to connect to Change and Synergy with. This will override hardcoded setting for the variable $db in the USER CONFIG SECTION 
+The database path to connect to Change and Synergy with. This will override hardcoded setting for the variable $db in the USER CONFIG SECTION
 
 =back
 
@@ -59,6 +59,9 @@ use Config;
 use Time::Local;
 use Data::Dumper;
 use Cwd qw(cwd);
+use File::Basename qw(fileparse);
+use File::Path qw(make_path);
+use File::Spec;
 
 my $file=basename($0);
 
@@ -72,34 +75,10 @@ my $password= "ccm_root";
 my $db      = "/ccmdb/training";
 my $role    = "ccm_admin";
 
-# Lifecycle and Field Information
-my $importCRfield       = "SQER";                   # The import file fieldname containing the old record problem ID.
-my $legacyCRfield       = "SQER";                   # The new CS lifecycle attribute used to store the OLD problem ID data.
-my $defaultListboxValue = "Select";                 # The default value for listboxes (usually Any or Select)
-my $alertParameter      = 25;                       # The number of CRs/Attachments to process before printing a message.
-my $forceLowerCrstatus  = 1;                        # Force the crstatus field to always be lowercase
-
-# The following are my INPUT data files
-my $datamap             = "datamapping.csv";        # The file which contains the data mapping information
-my $statusmap           = "status_mapping.csv";     # The file which contains the status mapping information
-my $csvfile             = "300records_withnotes.csv";             # The file which contains the CR data to import.
-my $staticValuesFile    = "import.add";             # The file which contains attribtues ALWAYS set on imported records
-my $attachmentFile      = "defect_attachments.txt"; # The file which contains the Attachment data to import.
-my $relationsFile       = "import.rel";             # The file containing my relations tables.
 my $exportDir           = "./export/";              # Default export directory
 
 # The following are my OUTPUT data files
 my $statusFile          = "import.log";             # The name of the import log file
-my $csvBad              = "import_record.err";      # The records that were unable to be loaded properly
-my $cfgfile             = "pt_listbox.cfg";         # The generated pt_listbox file.
-
-# The following are defaults and may be overridden on the command line:
-my $noCS                = 0;                        # 0 = Load data into CS      | 1 = Dry Run
-my $noattachment        = 0;                        # 0 = Associate attachments  | 1 = Don't attach files
-my $norelations         = 0;                        # 0 = Create relationships   | 1 = Don't create relationships
-my $nolegacyid          = 0;                        # 0 = Import under legacy ID | 1 = Assign New IDs
-my $nolistbox           = 0;                        # 0 = Create PT_Listbox File | 1 = Don't create PT_Listbox
-my $noisyMessages       = 0;                        # 0 = Log errors to file     | 1 = Always yell at us
 
 # Misc fields
 my $del = '';
@@ -193,45 +172,8 @@ my %TaskFields = (change_impact => 'changeimpact',
 
 ###################################### END USER CONFIG SECTION ##########################################
 # Define System Globals
-#my $csv                 = Text::CSV_XS->new({'binary' => 1 }); # CSV parser
-my $fh                  = new FileHandle;           # File handle for import csv file
 my $startTime;                                      # Value in seconds when we first started procesing data
-my $nostaticfields      = 0;                        # Default to adding special fields to each record.
-my $nolegacydata        = 0;                        # Default to processing legacy records
-my $updatedata          = 0;                        # Default to new record import, not attribute update
-my $haveDelayAttrs      = 0;                        # Do we have attributes that must be set after the submit is complete
-
-# Define Data Storage Objects
-my $columns;
-my %type;
-my $statusAttr;                                     # Source attribute name that contains the crstatus attr
-my @attr;                                           # Array of legacy attributes
-my @sourceAttrs;                                    # Array of source system attribute names
-my @destAttrs;                                      # Array of destination system attribute names
-my @mapTypes;                                       # Array of destination attribute type mappings
-my @loadPasses;                                     # Array of attribute load passes, values are either immediate or delay
-my %datamapping;                                    # Data map hash
-my %statusmapping;                                  # mapping of status values
-my @type;                                           # Array of legacy types
-my @attrStatic;                                     # Array of static attributes
-my @typeStatic;                                     # Array of static types
-my @valueStatic;                                    # Array of static data values
-my %attrStaticIndex;                                # Hash of static attributes
-my %attrIndex;
-my %listbox;
-my %parent;                                         # parent index
-my %dependantAttrs;                                 # Hash of Hash.  {attr} -> {denpendant attrs}
-my @parentIndex;                                    # Array of parent listbox values
-my %crTable;                                        # Old Record ID (index) to New Record ID lookup table
-my $sourceAttrs;                                    # Source attributes in our CS process file
-
-# Global Counter
-my $numberSuccess       = 0;                        # The number of records successfully imported.
-my $totalRecCount       = 0;                        # The number of records read
-my $attachmentSuccess   = 0;                        # The number of attachments imported
-my $attachmentCount     = 0;                        # The number of attachments attempted
-my $relationSuccess     = 0;                        # The number of relations created
-my $relationCount       = 0;                        # The number of relations attempted
+my $startDir;
 
 #########################################################################################################
 #                                           BEGIN MAIN EXECUTION                                        #
@@ -244,10 +186,10 @@ sub dbprint;
 sub sig_cleanup;
 
 #
-# catch signals SIGINT(2) SIGQUIT(3) SIGKILL(9) SIGTERM(15) 
+# catch signals SIGINT(2) SIGQUIT(3) SIGKILL(9) SIGTERM(15)
 # not catching SIGTRAP(5) since it is not on Win32
 #
-$SIG{'INT'}=$SIG{'QUIT'}=$SIG{'KILL'}=$SIG{'TERM'}=\&sig_cleanup; 
+$SIG{'INT'}=$SIG{'QUIT'}=$SIG{'KILL'}=$SIG{'TERM'}=\&sig_cleanup;
 
 # Add the config stuff to determine what OS we're running on
 
@@ -263,13 +205,13 @@ if ($Config{'osname'} eq 'MSWin32') {
    require Win32::TieRegistry;
    import Win32::TieRegistry;
    $CCM_HOME = $Registry->{"HKEY_LOCAL_MACHINE\\SOFTWARE\\Telelogic\\CM Synergy\\6.5\\Install\\ccm_home"};
-   
+
 } else {
    # it's UNIX (I hope)
    $os = "UNIX";
    $subdir = "\/";
    $null = "> /dev/null 2>&1";
-   
+
 }
 
 # Parse command line options
@@ -302,6 +244,9 @@ exportRelationships();
 closeSynergySession();
 
 closeLogFile();
+
+cd $startDir;
+
 exit;
 ############### END MAIN BLOCK #############
 
@@ -438,13 +383,13 @@ sub exportRelationships {
 
 ##########################################################################################################
 #
-# Export the attachments 
+# Export the attachments
 sub exportAttachments {
 
     my ($objectType) = @_;
 
     my $current_dir = cwd;
-    
+
     mkdir "attachments";
 
     chdir $current_dir . $dir_del . "attachments";
@@ -475,7 +420,7 @@ sub exportAttachments {
             my $rc = `$catCmd`;
 
         }
-        
+
         chdir $current_dir . $dir_del . "attachments";
     }
 
@@ -544,6 +489,19 @@ sub exportTasks {
 # get the current list of source attributes.
 #
 sub initialize {
+
+    $startDir = cwd;
+
+    # Check if the export dir exists, if not create it and then cd into it.
+    if (-e $exportDir and -d $exportDir) {
+        chdir $exportDir;
+    } else {
+
+        make_path $exportDir
+        chdir $exportDir;
+
+    }
+
     eval
     {
         openLogFile($statusFile);
@@ -551,7 +509,7 @@ sub initialize {
         if ($@) {
             printToLog($@, 1);
         }
-    
+
     };
 
     if ($@) {
@@ -597,13 +555,13 @@ sub closeLogFile {
 sub printToLog {
     my $errorMessage = shift;
     my $exitStatus   = shift;
-    
+
     print ERROR localtime(time) . " " . $errorMessage . "\n";
-    
+
     if($exitStatus) {
-    print $errorMessage . "\n";
-    closeErrorLog();
-    exit 1;
+        print $errorMessage . "\n";
+        closeErrorLog();
+        exit 1;
     }
 }
 
@@ -623,7 +581,7 @@ sub startSynergySession {
     } else {
         $start_cmd = "ccm start -r ccm_admin -q -nogui -m -d $db 2>/dev/null";
         $dir_del = "/";
-    }   
+    }
 
     dbprint "Starting with cmd\n\t$start_cmd\n";
     $CCM_ADDR=`$start_cmd`;
@@ -637,7 +595,7 @@ sub startSynergySession {
     dbprint "Determining database delimiter \n";
     $del=`ccm delim` || error_cleanup "Unable to talk with ccm session, have you started one?\n    Is 'ccm' in your PATH?";
     $del =~ s/\s*$//;
-    
+
     # Determin DCM delimiter
     dbprint "Determining DCM delimiter \n";
     $dcm_del=`ccm dcm -s -delim` || error_cleanup "Unable to talk with ccm session, have you started one?\n    Is 'ccm' in your PATH?";
@@ -684,7 +642,7 @@ sub parseCmdLine {
 ##########################################################################################################
 #  validateFiles
 #  -------------
-#  This routine verifies our import files 
+#  This routine verifies our import files
 #  are present and sets options accordingly.
 #
 sub validateFiles {
@@ -721,8 +679,7 @@ sub reportStats {
 # Returns:
 #   does not return!
 #
-sub error_cleanup
-{
+sub error_cleanup {
 
     system ("ccm stop $null");
     print "$file: $_[0] \n";
@@ -740,8 +697,7 @@ sub error_cleanup
 #   always returns 1
 #
 
-sub dbprint
-{
+sub dbprint {
     if ($debug) {
         print Dumper($_[0]);
     }
@@ -758,9 +714,7 @@ sub dbprint
 # Returns:
 #   does not return!
 #-------------------------------------------------------------------------------
-sub sig_cleanup
-{
-    $SIG{'INT'}=$SIG{'QUIT'}=$SIG{'TRAP'}=$SIG{'KILL'}=$SIG{'TERM'}=\&sig_cleanup; 
+sub sig_cleanup {
+    $SIG{'INT'}=$SIG{'QUIT'}=$SIG{'TRAP'}=$SIG{'KILL'}=$SIG{'TERM'}=\&sig_cleanup;
     error_cleanup "Caught signal $_[0], exiting..\n";
 }
-
