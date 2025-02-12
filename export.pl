@@ -75,15 +75,14 @@ my $password= "ccm_root";
 my $db      = "/ccmdb/training";
 my $role    = "ccm_admin";
 
-my $exportDir           = "./export/";              # Default export directory
+my $exportDir           = "./exports/";              # Default export directory
 
 # The following are my OUTPUT data files
-my $statusFile          = "import.log";             # The name of the import log file
+my $statusFile          = "export.log";             # The name of the export log file
 
 # Misc fields
 my $del = '';
 my $dcm_del = '';
-my $dir_del = '/';
 
 # Field Mappings
 my %CRFields = 	(change_impact => 'changeimpact',
@@ -218,8 +217,6 @@ if ($Config{'osname'} eq 'MSWin32') {
 parseCmdLine();
 
 # Ensure files are present to match our options
-validateFiles();
-
 initialize();
 
 #------------------------------------------------------------------------------------------------------
@@ -392,7 +389,7 @@ sub exportAttachments {
 
     mkdir "attachments";
 
-    chdir $current_dir . $dir_del . "attachments";
+    chdir $current_dir . $subdir . "attachments";
 
     my $query = "ccm query -t problem -ns -u \"object_type=\'$objectType\' and has_attachment(has_attr(\'attachment_name\'))\"";
     # Build the output statement
@@ -421,7 +418,7 @@ sub exportAttachments {
 
         }
 
-        chdir $current_dir . $dir_del . "attachments";
+        chdir $current_dir . $subdir . "attachments";
     }
 
 
@@ -484,8 +481,8 @@ sub exportTasks {
 
 ##########################################################################################################
 #
-# Basic script initialization to prepare for importing.  Open the log file, setup the connection parameters,
-# login the user who is to perform the import operation.  This user must have the ccm_admin role.  And finally
+# Basic script initialization to prepare for exporting.  Open the log file, setup the connection parameters,
+# login the user who is to perform the export operation.  This user must have the ccm_admin role.  And finally
 # get the current list of source attributes.
 #
 sub initialize {
@@ -527,7 +524,7 @@ sub openLogFile {
 
     # Abort if we cannot open our log file
     unless (open ERROR, ">$logfile") {
-    die("Cannot open the import log file: $logfile. $!.");
+    die("Cannot open the export log file: $logfile. $!.");
     }
 
     print ERROR localtime(time) . " ********** Export started **************\n";
@@ -575,10 +572,8 @@ sub startSynergySession {
     my $start_cmd="";
     if ($os eq "MSWin32") {
         $start_cmd = "ccm start -r ccm_admin -n $username -pw $password -q -nogui -m -d $db 2> NUL";
-        $dir_del = "\\";
     } else {
         $start_cmd = "ccm start -r ccm_admin -q -nogui -m -d $db 2>/dev/null";
-        $dir_del = "/";
     }
 
     dbprint "Starting with cmd\n\t$start_cmd\n";
@@ -634,19 +629,6 @@ sub parseCmdLine {
     pod2usage(-exitstatus => 0, -verbose => 2) if $man;
 
 
-    return 0;
-}
-
-##########################################################################################################
-#  validateFiles
-#  -------------
-#  This routine verifies our import files
-#  are present and sets options accordingly.
-#
-sub validateFiles {
-    print "Checking import files:\n";
-
-    print "\tFile Check Complete\n\n";
     return 0;
 }
 
