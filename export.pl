@@ -203,8 +203,7 @@ if ($Config{'osname'} eq 'MSWin32') {
    # We use require and import instead of use so UNIX doesn't complain
    require Win32::TieRegistry;
    import Win32::TieRegistry;
-   $CCM_HOME = $Registry->{"HKEY_LOCAL_MACHINE\\SOFTWARE\\Telelogic\\CM Synergy\\6.5\\Install\\ccm_home"};
-
+   $CCM_HOME = $Registry->{"HKEY_LOCAL_MACHINE\\SOFTWARE\\WOW6432Node\\Telelogic\\CM Synergy\\7.2.2\\Install\\ccm_home"};
 } else {
    # it's UNIX (I hope)
    $os = "UNIX";
