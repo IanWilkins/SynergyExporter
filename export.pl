@@ -245,7 +245,7 @@ closeSynergySession();
 
 closeLogFile();
 
-cd $startDir;
+chdir $startDir;
 
 exit;
 ############### END MAIN BLOCK #############
@@ -496,10 +496,8 @@ sub initialize {
     if (-e $exportDir and -d $exportDir) {
         chdir $exportDir;
     } else {
-
-        make_path $exportDir
+        make_path $exportDir;
         chdir $exportDir;
-
     }
 
     eval
@@ -651,23 +649,6 @@ sub validateFiles {
     print "\tFile Check Complete\n\n";
     return 0;
 }
-
-##########################################################################################################
-#  reportStats
-#  -----------
-#  This routine reports the status of the import
-#
-sub reportStats {
-    print "\n\t*****\n\tSuccessfully imported $numberSuccess out of $totalRecCount records.\n";
-    my $elapsed = (time - $startTime);
-    if ($elapsed != 0) {
-    print "\tElapsed time: $elapsed seconds\n";
-    print "\tAverage time/record: " . ($elapsed/$totalRecCount). " seconds\n";
-    }
-    print "\t*****\n\n";
-}
-
-
 
 
 ##########################################################################################################
