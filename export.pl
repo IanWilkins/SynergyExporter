@@ -432,7 +432,7 @@ sub exportTasks {
 
     my @outputRecords = ();
 
-    my $query = "ccm query -t task -ns -u \"status!=\'task_automatic\'\"";
+    my $query = "ccm query -t task -ns -u \"status!=\'task_automatic\' and status!=\'component_task\'\"";
     # Build the output statement
     my $format = "-f \"";
     my @headers = ();
