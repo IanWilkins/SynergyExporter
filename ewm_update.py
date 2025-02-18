@@ -15,8 +15,10 @@
 # Define Imports
 import argparse
 import os
+from re import I
 import sys
 import csv
+import collections
 
 ###############################################################################
 # Define Globals
@@ -69,13 +71,17 @@ def parseCommandLine():
                         dest='workingDir',
                         default='./work',
                         help='Directory for working and temp files')
+    parser.add_argument('--skipAttachments', action='store_true',
+                        help='Skip Processing Attachments')
+    parser.add_argument('--skipLinks', action='store_true',
+                        help='Skip Processing Links')
     parser.add_argument('--debug', action='store_true',
                         help='Turn on debug messages')
 
     global args
     args = parser.parse_args()
 
-    print (args)
+    debugPrint(args)
 
 def validateArguments():
     # Verify that the files/directories needed exist
@@ -127,7 +133,7 @@ def loadCrossReference():
 
     csvFile.close()
 
-    print(crossReference)
+    debugPrint(crossReference)
 
 def readAttachments():
     # Read the attachments directory
@@ -182,6 +188,73 @@ def loadAttachments(attachments):
         debugPrint("RC from Attachment Update: " + str(rc))
 
 
+def loadLinks():
+
+    links = collections.defaultdict(set)
+
+    csvFile = open(os.path.join(args.sourceDir, "relationships.csv"), 'r')
+    csv_reader = csv.DictReader(csvFile, delimiter=",")
+
+    # Load the links cross reference
+    for line in csv_reader:
+        links[line["parent"]].add(line["child"])
+
+    csvFile.close()
+
+    debugPrint(links)
+
+    return links
+
+def createLinks(links):
+    debugPrint("Starting createLinks")
+
+    # Setup command path
+    wclPath = os.path.dirname(args.wclCommand)
+    os.chdir(wclPath)
+
+    # Sample Update command to add attachments
+    # ./wcl.sh -update
+    # repository="https://expert-labs-elm.fyre.ibm.com/ccm"
+    # user='iwilkins'
+    # password='iwilkins'
+    # id="289"
+    # @link_child=id1|id2|id3
+
+    # Loop through the attachments
+    for oldId in links:
+        debugPrint("Processing links for OldID: " + oldId)
+
+        if not oldId in crossReference:
+            print("Unable to find EWM Id for Parent: " + oldId + " -- Skipping this record")
+            continue
+
+        ewmId = crossReference[oldId][0]
+        debugPrint("Found EWM Id: " + ewmId)
+
+        children = links[oldId]
+
+        # Create the run the attachments commands
+
+        cmdOptions =  " -update repository=\"" + args.ewmURL + "\" "
+        cmdOptions += "user=\"" + args.user + "\" "
+        cmdOptions += "password=\"" + args.password + "\" "
+        cmdOptions += "id=\"" + ewmId + "\" "
+        cmdOptions += "@link_child=\""
+        # Build the attachment bit
+        for childId in children:
+            if not childId in crossReference:
+                print("Unable to find EWM Id for Child: " + childId + " -- Skipping this record")
+                continue
+            cmdOptions += crossReference[childId][0] + "|"
+
+        cmdOptions = cmdOptions[:-1]
+        cmdOptions += "\""
+
+        debugPrint(cmdOptions)
+
+        rc = os.system(args.wclCommand + cmdOptions)
+
+        debugPrint("RC from Attachment Update: " + str(rc))
 
 def pathToDict(path):
 
@@ -207,8 +280,13 @@ def main():
     fetchCrossReference()
     loadCrossReference()
 
-    attachments = readAttachments()
-    loadAttachments(attachments)
+    if (not args.skipAttachments):
+        attachments = readAttachments()
+        loadAttachments(attachments)
+
+    if (not args.skipLinks):
+        links = loadLinks()
+        createLinks(links)
 
 
 
