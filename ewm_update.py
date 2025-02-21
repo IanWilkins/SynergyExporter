@@ -80,6 +80,12 @@ def parseCommandLine():
                         help='Skip Processing Links')
     parser.add_argument('--debug', action='store_true',
                         help='Turn on debug messages')
+    parser.add_argument('--rmiServer', action='store_true',
+                        help='Experimental - Use RMI Server')
+    parser.add_argument('--server', action='store', nargs='?',
+                        dest='server',
+                        default='//localhost:1199/WorkItemCommandLine',
+                        help='Experimental - Connect to RMI server')
 
     global args
     args = parser.parse_args()
@@ -87,6 +93,9 @@ def parseCommandLine():
     debugPrint(args)
 
 def validateArguments():
+
+    global rmiServerClause
+
     # Verify that the files/directories needed exist
     print ("Validating Command Line")
     if not os.path.isfile(args.wclCommand):
@@ -94,6 +103,13 @@ def validateArguments():
 
     if not os.path.isdir(args.sourceDir):
        sys.exit("Source dir not valid")
+
+    if args.rmiServer:
+        rmiServerClause = "/rmiClient=" + args.server + " "
+    else:
+        rmiServerClause = ""
+
+
 
 def fetchCrossReference():
     # Run the query to get the cross reference info
@@ -107,7 +123,7 @@ def fetchCrossReference():
     crossRefFile = os.path.join(workingDir, "crossRef.csv")
     #crossRefFile = "crossRef.csv"
 
-    cmdOptions =  " -exportworkitems repository=\"" + args.ewmURL + "\" "
+    cmdOptions =  " -exportworkitems " + rmiServerClause + "repository=\"" + args.ewmURL + "\" "
     cmdOptions += "user=\"" + args.user + "\" "
     cmdOptions += "password=\"" + args.password + "\" "
     cmdOptions += "projectArea=\"" + args.projectArea + "\" "
@@ -181,7 +197,7 @@ def loadAttachments(attachments):
 
         # Create the run the attachments commands
 
-        cmdOptions =  " -update repository=\"" + args.ewmURL + "\" "
+        cmdOptions =  " -update " + rmiServerClause + "repository=\"" + args.ewmURL + "\" "
         cmdOptions += "user=\"" + args.user + "\" "
         cmdOptions += "password=\"" + args.password + "\" "
         cmdOptions += "id=\"" + ewmId + "\" "
@@ -250,7 +266,7 @@ def createLinks(links):
 
         # Create the run the attachments commands
 
-        cmdOptions =  " -update repository=\"" + args.ewmURL + "\" "
+        cmdOptions =  " -update " + rmiServerClause + "repository=\"" + args.ewmURL + "\" "
         cmdOptions += "user=\"" + args.user + "\" "
         cmdOptions += "password=\"" + args.password + "\" "
         cmdOptions += "id=\"" + ewmId + "\" "
