@@ -19,6 +19,7 @@ from re import I
 import sys
 import csv
 import collections
+import subprocess
 
 ###############################################################################
 # Define Globals
@@ -26,6 +27,7 @@ import collections
 ###############################################################################
 # Define methods/functions
 def initialize():
+    print("Initializing System")
     global startDir
     startDir = os.getcwd()
     global workingDir
@@ -37,31 +39,32 @@ def initialize():
 
 
 def parseCommandLine():
+    print("Parsing Command Line")
     parser = argparse.ArgumentParser(prog='ewm_update',
                                      description='Update Workitems after import')
     parser.add_argument('--wcl', action='store',  nargs='?',
                         dest='wclCommand',
-                        default='/Users/ian/expert-labs/WCL/wcl.sh',
+                        default='/WCL/wcl.sh',
                         help='Path to the WCL directory')
     parser.add_argument('-d', '--dir', action='store',  nargs='?',
                         dest='sourceDir',
-                        default='/Users/ian/tmp/exports',
+                        default='/synergy/exports',
                         help='Path to the Synergy Export directory')
     parser.add_argument('--url', action='store',  nargs='?',
                         dest='ewmURL',
-                        default='https://expert-labs-elm.fyre.ibm.com/ccm',
+                        default='https://elm.example.com/ccm',
                         help='URL of EWM instance')
     parser.add_argument('--projectArea', action='store',  nargs='?',
                         dest='projectArea',
-                        default='Crane 01-10-2025 Drop',
+                        default='EWM Project Area',
                         help='Project Area Name')
     parser.add_argument('-u', '--user', action='store',  nargs='?',
                         dest='user',
-                        default='iwilkins',
+                        default='ewm-admin',
                         help='User id to connect to EWM with')
     parser.add_argument('-p', '--pass', action='store',  nargs='?',
                         dest='password',
-                        default='iwilkins',
+                        default='password',
                         help='Password to connect to EWM with')
     parser.add_argument('--query', action='store',  nargs='?',
                         dest='queryName',
@@ -85,6 +88,7 @@ def parseCommandLine():
 
 def validateArguments():
     # Verify that the files/directories needed exist
+    print ("Validating Command Line")
     if not os.path.isfile(args.wclCommand):
        sys.exit("WCL option is incorrect")
 
@@ -93,6 +97,7 @@ def validateArguments():
 
 def fetchCrossReference():
     # Run the query to get the cross reference info
+    print(f"Running query {args.queryName} to lookup ID <-> OldId Values")
 
     wclPath = os.path.dirname(args.wclCommand)
     os.chdir(wclPath)
@@ -111,16 +116,17 @@ def fetchCrossReference():
     cmdOptions += "columns=\"Old ID,Id,Type\" "
     cmdOptions += " /asrtceclipse"
 
-    rc = os.system(args.wclCommand + cmdOptions)
+    try:
+        results = subprocess.check_output(args.wclCommand + cmdOptions, shell=True, text=True, stderr=subprocess.STDOUT)
+        debugPrint(">>>" + results)
 
-    debugPrint(rc)
-
-    if rc:
-        SystemExit("Unable to fetch cross references")
+    except subprocess.CalledProcessError as e:
+        print(f"ERROR -- Command failed with return code {e.returncode}")
 
 
 def loadCrossReference():
     # Load the CSV file
+    print ("Parsing the result of the Query")
     global crossReference
     crossReference = {}
 
@@ -137,7 +143,9 @@ def loadCrossReference():
 
 def readAttachments():
     # Read the attachments directory
-    attachments = pathToDict(os.path.join(args.sourceDir, 'attachments'))
+    attachmentDir = os.path.join(args.sourceDir, 'attachments')
+    print (f"Finding Attachments in {attachmentDir}")
+    attachments = pathToDict(attachmentDir)
 
     debugPrint(attachments)
 
@@ -162,10 +170,13 @@ def loadAttachments(attachments):
 
     # Loop through the attachments
     for oldId in attachments:
-        debugPrint("Processing attachments for OldID: " + oldId)
-        ewmId = crossReference[oldId][0]
-        debugPrint("Found EWM Id: " + ewmId)
+        if not oldId in crossReference:
+            print("WARNING -- Unable to find EWM Id for Attachment Owner: " + oldId + " -- Skipping this record")
+            continue
 
+        ewmId = crossReference[oldId][0]
+
+        print(f"Processing Attachments for {oldId} ({ewmId})")
         files = attachments[oldId]
 
         # Create the run the attachments commands
@@ -183,16 +194,22 @@ def loadAttachments(attachments):
 
         debugPrint(cmdOptions)
 
-        rc = os.system(args.wclCommand + cmdOptions)
+        try:
+            results = subprocess.check_output(args.wclCommand + cmdOptions, shell=True, text=True, stderr=subprocess.STDOUT)
+            debugPrint(">>>" + results)
 
-        debugPrint("RC from Attachment Update: " + str(rc))
+        except subprocess.CalledProcessError as e:
+            print(f"ERROR -- Command failed with return code {e.returncode}")
+
 
 
 def loadLinks():
 
+    csvFilePath = os.path.join(args.sourceDir, "relationships.csv")
+    print (f"Processing Link file: {csvFilePath}")
     links = collections.defaultdict(set)
 
-    csvFile = open(os.path.join(args.sourceDir, "relationships.csv"), 'r')
+    csvFile = open(csvFilePath, 'r')
     csv_reader = csv.DictReader(csvFile, delimiter=",")
 
     # Load the links cross reference
@@ -222,15 +239,13 @@ def createLinks(links):
 
     # Loop through the attachments
     for oldId in links:
-        debugPrint("Processing links for OldID: " + oldId)
-
         if not oldId in crossReference:
-            print("Unable to find EWM Id for Parent: " + oldId + " -- Skipping this record")
+            print("WARNING -- Unable to find EWM Id for Parent: " + oldId + " -- Skipping this record")
             continue
 
         ewmId = crossReference[oldId][0]
-        debugPrint("Found EWM Id: " + ewmId)
 
+        print (f"Creating Child Links for {oldId} ({ewmId})")
         children = links[oldId]
 
         # Create the run the attachments commands
@@ -243,7 +258,7 @@ def createLinks(links):
         # Build the attachment bit
         for childId in children:
             if not childId in crossReference:
-                print("Unable to find EWM Id for Child: " + childId + " -- Skipping this record")
+                print("WARNING -- Unable to find EWM Id for Child: " + childId + " -- Skipping this record")
                 continue
             cmdOptions += crossReference[childId][0] + "|"
 
@@ -252,9 +267,12 @@ def createLinks(links):
 
         debugPrint(cmdOptions)
 
-        rc = os.system(args.wclCommand + cmdOptions)
+        try:
+            results = subprocess.check_output(args.wclCommand + cmdOptions, shell=True, text=True, stderr=subprocess.STDOUT)
+            debugPrint(">>>" + results)
 
-        debugPrint("RC from Attachment Update: " + str(rc))
+        except subprocess.CalledProcessError as e:
+            print(f"ERROR -- Command failed with return code {e.returncode}")
 
 def pathToDict(path):
 
@@ -268,7 +286,9 @@ def pathToDict(path):
 
 def debugPrint(msg):
     if args.debug:
+        print("-------- Start DEBUG INFO ----------")
         print(msg)
+        print("-------- End DEBUG INFO ----------")
 
 def main():
 
