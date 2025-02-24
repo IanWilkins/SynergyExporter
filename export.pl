@@ -14,6 +14,7 @@
         [user <user id to connect to Synergy>]
         [password <password to connect to Synergy>]
         [db <database path to export from>]
+        [server <Synergy server URL>]
 
 
 
@@ -36,6 +37,10 @@ The password to connect to Change and Synergy with. This will override hardcoded
 =item B<db E<lt>database path to export fromE<gt>>
 
 The database path to connect to Change and Synergy with. This will override hardcoded setting for the variable $db in the USER CONFIG SECTION
+
+=item B<server E<lt>Synergy Server URLE<gt>>
+
+The Synergy Server to connect with when running on Windows. This will override hardcoded setting for the variable $server in the USER CONFIG SECTION
 
 =back
 
@@ -74,6 +79,7 @@ my $username= "ccm_root";
 my $password= "ccm_root";
 my $db      = "/ccmdb/training";
 my $role    = "ccm_admin";
+my $server  = "https://server.example.com:8400";
 
 my $exportDir           = "./exports/";              # Default export directory
 
@@ -569,7 +575,7 @@ sub startSynergySession {
 
     my $start_cmd="";
     if ($os eq "MSWin32") {
-        $start_cmd = "ccm start -r ccm_admin -n $username -pw $password -q -nogui -m -d $db 2> NUL";
+        $start_cmd = "ccm start -server $server -r ccm_admin -n $username -pw $password -q -nogui -m -d $db 2> NUL";
     } else {
         $start_cmd = "ccm start -r ccm_admin -q -nogui -m -d $db 2>/dev/null";
     }
@@ -617,6 +623,7 @@ sub parseCmdLine {
     GetOptions("exportDir=s" => \$exportDir,
              "user=s"       => \$username,
              "password=s"   => \$password,
+             "server=s"     => \$server,
              "db=s"         => \$db,
              "role=s"       => \$role,
              "help|?"       => \$help,
