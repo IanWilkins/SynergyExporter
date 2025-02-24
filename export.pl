@@ -10,11 +10,11 @@
 
     Options:
 
-        [exportDir <export directory]
-        [user <user id to connect to Synergy>]
-        [password <password to connect to Synergy>]
-        [db <database path to export from>]
-        [server <Synergy server URL>]
+        [-exportDir <export directory>]
+        [-user <user id to connect to Synergy>]
+        [-password <password to connect to Synergy>]
+        [-db <database path to export from>]
+        [-server <Synergy server URL>]
 
 
 
@@ -24,7 +24,7 @@
 
 =item B<exportDir E<lt>export directoryE<gt>>
 
-The filename to load the CR data into. This will override hardcoded setting for the variable $attachDir in the USER CONFIG SECTION
+The directory to load the CR/IR and Attachment data into. This will override hardcoded setting for the variable $exportDir in the USER CONFIG SECTION.
 
 =item B<user E<lt>user id to connect to Change and SynergyE<gt>>
 
