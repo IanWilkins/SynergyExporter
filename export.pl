@@ -75,6 +75,8 @@ my $file=basename($0);
 # Environment Information
 # Login information
 
+my $maxStringLength = 32768;
+
 my $username= "ccm_root";
 my $password= "ccm_root";
 my $db      = "/ccmdb/training";
@@ -301,6 +303,9 @@ sub exportObjects {
 
         # Convert the <void>'s to empty strings
         for my $attrib (@attrs) {
+            if (length($attrib) > $maxStringLength) {
+                $attrib = substr($attrib, 0, $maxStringLength);
+            }
             if ($attrib eq "<void>") {
                 $attrib = "";
             }

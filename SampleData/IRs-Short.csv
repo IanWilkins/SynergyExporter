@@ -1,0 +1,45 @@
+actual_duration,actual_verification_duration,changeimpact,checklist1_history,checklist1_status2,checklist,com.ibm.team.workitem.attribute.creationdate,com.ibm.team.workitem.attribute.creator,com.ibm.team.workitem.attribute.state,defect.history,defect.status,defects_list,defer_date,estimated_completion_date,estimated_duration,estimated_verification_date,estimated_verification_duration,functional_group,keyword,meeting.minutes.history,meeting.minutes.status,meeting_minutes,com.ibm.team.workitem.attribute.workitemtype,part_number,com.ibm.team.workitem.attribute.priority,com.ibm.team.workitem.attribute.description,oldid,com.ibm.team.workitem.attribute.summary,product_name,product_version,program,com.ibm.team.workitem.attribute.category,request_origin,requesttype,com.crane.cr_process.resolver,com.ibm.team.workitem.attribute.severity,com.crane.attribute.sw_load,transitionlog,verification_engineer,verificationPriority
+,,,,,,"2/3/25 10:50 AM",,ir_assigned,,,,,"2/6/25 12:00 AM",1,"2/14/25 12:00 AM",1,"Group 1",,,,,IR,123,1,asdfa,trn#203,"First Sample IR","Product 1-1","1,0","Program 1","Project 1",,,ccm_root,,"SW Load 1","Submitted to ir_entered by Synergy Admin (ccm_root) on 2025/02/03 10:50:25 from database trn
+Relationship change made by Synergy Admin (ccm_root) on 2025/02/03 10:50:26 from database trn
+Created 'associated_ir' relationship from CR 'trn~202' to CR 'trn~203'
+Modifications made by Synergy Admin (ccm_root) on 2025/02/03 11:00:59 from database trn
+project_name:   -->  Project 1
+functional_group:   -->  Group 1
+Modifications made by Synergy Admin (ccm_root) on 2025/02/03 11:18:46 from database trn
+product_version:   -->  1,0
+product_name:   -->  Product 1-1
+part_number:   -->  123
+program:   -->  Program 1
+sw_load:   -->  SW Load 1
+Transitioned to ir_review by Synergy Admin (ccm_root) on 2025/02/03 11:18:55 from database trn
+<comments not supplied>
+Transitioned to ir_assigned by Synergy Admin (ccm_root) on 2025/02/03 11:20:57 from database trn
+<comments not supplied>
+ ---------- 
+est_verification_date:   -->  2025/02/14 0:00:00
+est_completion_date:   -->  2025/02/06 0:00:00
+resolver:   -->  ccm_root
+est_verification_duration:   -->  1
+est_duration:   -->  1
+verif_engr:   -->  iwilkins
+release:   -->  3D_Simulation/2.2
+Modifications made by Synergy Admin (ccm_root) on 2025/02/03 11:28:35 from database trn
+priority:   -->  1
+Relationship change made by Synergy Admin (ccm_root) on 2025/02/03 11:30:12 from database trn
+Created 'attachment' relationship from CR 'trn~203' to 'TigersLogo.jpeg'.
+Relationship change made by Synergy Admin (ccm_root) on 2025/02/03 11:49:08 from database trn
+Created 'attachment' relationship from CR 'trn~203' to 'atextfile.txt'.
+Relationship change made by Synergy Admin (ccm_root) on 2025/02/11 16:33:01 from database trn
+Deleted 'attachment' relationship from CR 'trn#203' to 'atextfile.txt' (attachment_trn~203 1738601348~1:binary:trn#1).
+Deleted attachment 'atextfile.txt'.
+Relationship change made by Synergy Admin (ccm_root) on 2025/02/11 16:33:06 from database trn
+Deleted 'attachment' relationship from CR 'trn#203' to 'TigersLogo.jpeg' (attachment_trn~203 1738600211~1:binary:trn#1).
+Deleted attachment 'TigersLogo.jpeg'.
+Relationship change made by Synergy Admin (ccm_root) on 2025/02/11 16:33:27 from database trn
+Created 'attachment' relationship from CR 'trn#203' to 'atextfile.txt'.
+Relationship change made by Synergy Admin (ccm_root) on 2025/02/11 16:33:28 from database trn
+Created 'attachment' relationship from CR 'trn#203' to 'TigersLogo.jpeg'.
+Relationship change made by Synergy Admin (ccm_root) on 2025/02/11 16:44:28 from database trn
+Created 'associated_task' relationship from CR 'trn#203' to task 'trn#172'
+Relationship change made by Synergy Admin (ccm_root) on 2025/02/13 11:07:07 from database trn
+Created 'associated_task' relationship from CR 'trn#203' to task 'trn#173'",iwilkins,

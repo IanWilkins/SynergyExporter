@@ -1,0 +1,45 @@
+changeimpact,com.ibm.team.workitem.attribute.creationdate,com.ibm.team.workitem.attribute.creator,com.ibm.team.workitem.attribute.state,custom1,custom2,custom_3,custom_4,defer_date,com.ibm.team.workitem.attribute.duration,investigator,com.ibm.team.workitem.attribute.workitemtype,part_number,com.ibm.team.workitem.attribute.priority,com.ibm.team.workitem.attribute.description,oldid,com.ibm.team.workitem.attribute.summary,program,com.ibm.team.workitem.attribute.category,reason-for-investigation,request_origin,requesttype,com.crane.cr_process.resolver,com.ibm.team.workitem.attribute.severity,submitter,com.crane.attribute.sw_load,transitionlog
+"Impact 1","2/3/25 10:50 AM",,assigned,,,,,,,iwilkins,CR,,,SDf,trn#202,"First Sample Crane CR","Program 1",,,"Origin 1","Request Type 1",,,ccm_root,"SW Load 1","Submitted to entered by Synergy Admin (ccm_root) on 2025/02/03 10:50:02 from database trn
+Relationship change made by Synergy Admin (ccm_root) on 2025/02/03 10:50:26 from database trn
+Created 'associated_ir' relationship from CR 'trn~202' to CR 'trn~203'
+Transitioned to investigate by Synergy Admin (ccm_root) on 2025/02/03 10:58:56 from database trn
+<comments not supplied>
+ ---------- 
+investigator:   -->  iwilkins
+Modifications made by Synergy Admin (ccm_root) on 2025/02/03 11:18:14 from database trn
+request_origin:   -->  Origin 1
+request_type:   -->  Request Type 1
+change_impact:   -->  Impact 1
+program:   -->  Program 1
+Transitioned to assigned by Synergy Admin (ccm_root) on 2025/02/03 11:20:13 from database trn
+
+Modifications made by Synergy Admin (ccm_root) on 2025/02/03 11:20:27 from database trn
+sw_load:   -->  SW Load 1
+Relationship change made by Synergy Admin (ccm_root) on 2025/02/11 12:40:12 from database trn
+Created 'attachment' relationship from CR 'trn~202' to 'TigersLogo.jpeg'.
+Relationship change made by Synergy Admin (ccm_root) on 2025/02/11 12:51:42 from database trn
+Created 'attachment' relationship from CR 'trn~202' to 'atextfile.txt'.
+Relationship change made by Synergy Admin (ccm_root) on 2025/02/11 16:31:46 from database trn
+Deleted 'attachment' relationship from CR 'trn#202' to 'atextfile.txt' (attachment_trn~202 1739296302~1:binary:trn#1).
+Deleted attachment 'atextfile.txt'.
+Relationship change made by Synergy Admin (ccm_root) on 2025/02/11 16:31:51 from database trn
+Deleted 'attachment' relationship from CR 'trn#202' to 'TigersLogo.jpeg' (attachment_trn~202 1739295612~1:binary:trn#1).
+Deleted attachment 'TigersLogo.jpeg'.
+Relationship change made by Synergy Admin (ccm_root) on 2025/02/11 16:32:15 from database trn
+Created 'attachment' relationship from CR 'trn#202' to 'TigersLogo.jpeg'.
+Relationship change made by Synergy Admin (ccm_root) on 2025/02/11 16:32:15 from database trn
+Created 'attachment' relationship from CR 'trn#202' to 'atextfile.txt'."
+"Impact 1","2/10/25 10:10 AM",,investigate,"CustomValue 1","CustomValue 2",,,,,iwilkins,CR,123,3,"This is my description
+which is multiline",trn#204,"Sample CR with Most stuff","Program 1","Project 1",,"Origin 1","Request Type 1",ccm_root,1,ccm_root,"SW Load 1","Submitted to entered by Synergy Admin (ccm_root) on 2025/02/10 10:10:50 from database trn
+Modifications made by Synergy Admin (ccm_root) on 2025/02/10 10:12:15 from database trn
+part_number:   -->  123
+project_name:   -->  Project 1
+Transitioned to investigate by Synergy Admin (ccm_root) on 2025/02/10 10:12:23 from database trn
+<comments not supplied>
+Relationship change made by Synergy Admin (ccm_root) on 2025/02/11 12:39:19 from database trn
+Created 'attachment' relationship from CR 'trn~204' to 'atextfile.txt'.
+Relationship change made by Synergy Admin (ccm_root) on 2025/02/11 16:33:37 from database trn
+Deleted 'attachment' relationship from CR 'trn#204' to 'atextfile.txt' (attachment_trn~204 1739295557~1:binary:trn#1).
+Deleted attachment 'atextfile.txt'.
+Relationship change made by Synergy Admin (ccm_root) on 2025/02/11 16:33:47 from database trn
+Created 'attachment' relationship from CR 'trn#204' to 'atextfile.txt'."
