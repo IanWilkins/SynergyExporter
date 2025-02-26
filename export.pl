@@ -75,7 +75,7 @@ my $file=basename($0);
 # Environment Information
 # Login information
 
-my $maxStringLength = 32768;
+my $maxStringLength = 32000;
 
 my $username= "ccm_root";
 my $password= "ccm_root";
@@ -474,6 +474,9 @@ sub exportTasks {
 
         # Convert the <void>'s to empty strings
         for my $attrib (@attrs) {
+            if (length($attrib) > $maxStringLength) {
+                $attrib = substr($attrib, 0, $maxStringLength);
+            }
             if ($attrib eq "<void>") {
                 $attrib = "";
             }
@@ -580,7 +583,7 @@ sub startSynergySession {
 
     my $start_cmd="";
     if ($os eq "MSWin32") {
-        $start_cmd = "ccm start -server $server -r ccm_admin -n $username -pw $password -q -nogui -m -d $db 2> NUL";
+        $start_cmd = "ccm start -s $server -r ccm_admin -n $username -pw $password -q -nogui -m -d $db 2> NUL";
     } else {
         $start_cmd = "ccm start -r ccm_admin -q -nogui -m -d $db 2>/dev/null";
     }
