@@ -160,7 +160,64 @@ my %IRFields = (actual_duration => 'actual_duration',
                 transition_log => 'transitionlog',
                 object_type => 'com.ibm.team.workitem.attribute.workitemtype',
                 verif_engr => 'verification_engineer',
-                verif_priority => 'verificationPriority');
+                verif_priority => 'verificationPriority',
+                IR_STATIC => 'old_change_type');
+
+my %RCRFields = (actual_duration => 'actual_duration',
+                actual_verification_duration => 'actual_verification_duration',
+                change_impact => 'changeimpact',
+                check_list_working => 'checklist',
+                check_list => 'checklist1_history',
+                check_list_completed => 'checklist1_status2',
+                submitter => 'com.ibm.team.workitem.attribute.creator',
+                create_time => 'com.ibm.team.workitem.attribute.creationdate',
+                defect_list => 'defect.history',
+                defect_list_completed => 'defect.status',
+                defect_list_working => 'defects_list',
+                defer_date => 'defer_date',
+                problem_description => 'com.ibm.team.workitem.attribute.description',
+                est_duration => 'com.ibm.team.workitem.attribute.duration',
+                est_completion_date => 'estimated_completion_date',
+                est_duration => 'estimated_duration',
+                est_verification_date => 'estimated_verification_date',
+                est_verification_duration => 'estimated_verification_duration',
+                project_name => 'com.ibm.team.workitem.attribute.category',
+                functional_group => 'functional_group',
+                keyword => 'keyword',
+                minutes_working => 'meeting_minutes',
+                minutes => 'meeting.minutes.history',
+                minutes_completed => 'meeting.minutes.status',
+                problem_number => 'oldid',
+                part_number => 'part_number',
+                priority => 'com.ibm.team.workitem.attribute.priority',
+                product_name => 'product_name',
+                product_version => 'product_version',
+                program => 'program',
+                request_origin => 'request_origin',
+                request_type => 'requesttype',
+                resolver => 'com.crane.cr_process.resolver',
+                severity => 'com.ibm.team.workitem.attribute.severity',
+                crstatus => 'com.ibm.team.workitem.attribute.state',
+                problem_synopsis => 'com.ibm.team.workitem.attribute.summary',
+                sw_load => 'com.crane.attribute.sw_load',
+                transition_log => 'transitionlog',
+                object_type => 'com.ibm.team.workitem.attribute.workitemtype',
+                verif_engr => 'verification_engineer',
+                verif_priority => 'verificationPriority',
+                RCR_STATIC => 'old_change_type');
+
+my %cCRFields = (change_impact => 'changeimpact',
+                 submitter => 'com.ibm.team.workitem.attribute.creator',
+                 create_time => 'com.ibm.team.workitem.attribute.creationdate',
+                 problem_description => 'com.ibm.team.workitem.attribute.description',
+                 project_name => 'com.ibm.team.workitem.attribute.category',
+                 investigator => 'com.ibm.team.workitem.attribute.owner',
+                 problem_number => 'oldid',
+                 crstatus => 'com.ibm.team.workitem.attribute.state',
+                 problem_synopsis => 'com.ibm.team.workitem.attribute.summary',
+                 transition_log => 'transitionlog',
+                 Investigation_STATIC => 'task_type',
+                 Task_STATIC => 'com.ibm.team.workitem.attribute.workitemtype');
 
 my %TaskFields = (change_impact => 'changeimpact',
                   submitter => 'com.ibm.team.workitem.attribute.creator',
@@ -174,6 +231,7 @@ my %TaskFields = (change_impact => 'changeimpact',
                   status => 'com.ibm.team.workitem.attribute.state',
                   task_synopsis => 'com.ibm.team.workitem.attribute.summary',
                   status_log => 'transitionlog',
+                  Regular_Task_STATIC => 'task_type',
                   cvtype => 'com.ibm.team.workitem.attribute.workitemtype');
 
 ###################################### END USER CONFIG SECTION ##########################################
@@ -260,7 +318,9 @@ exit;
 # Export the CRs to the CSV file
 sub exportProblems {
     exportObjects("CR", %CRFields);
+    exportObjects("cCR", %cCRFields);
     exportObjects("IR", %IRFields);
+    exportRCRs("RCR", %RCRFields);
 }
 
 ##########################################################################################################
@@ -279,6 +339,9 @@ sub exportObjects {
     for my $key (sort keys(%fields)) {
         if ($key eq "problem_number") {
             $format .= "%created_in" . $dcm_del . "%" . $key . "@@@";
+        } elsif ($key =~ /_STATIC$/) {
+            # Not searching for the field just statically mapping
+            $format .= substr($key, 0, -7) . "@@@"
         } else {
             $format .= "%" . $key . "@@@";
         }
@@ -290,6 +353,8 @@ sub exportObjects {
 
     # Strip off the last @@@
     $format = substr($format, 0, -3) . "@@@@@@\"";
+
+    dbprint("Query: " . $query . " " . $format);
 
     my $qryResults = `$query $format`;
 
@@ -320,6 +385,70 @@ sub exportObjects {
     exportAttachments($objectType);
 
 }
+
+##########################################################################################################
+#
+sub exportRCRs {
+    my ($objectType, %fields) = @_;
+
+    my @outputRecords = ();
+
+    my $query = "ccm query -t problem -ns -u \"crstatus match \'rcr_*\"\"";
+    # Build the output statement
+    my $format = "-f \"";
+    my @headers = ();
+
+    for my $key (sort keys(%fields)) {
+        if ($key eq "problem_number") {
+            $format .= "%created_in" . $dcm_del . "%" . $key . "@@@";
+        } elsif ($key =~ /_STATIC$/) {
+            # Not searching for the field just statically mapping
+            $format .= substr($key, 0, -7) . "@@@"
+        } else {
+            $format .= "%" . $key . "@@@";
+        }
+        push @headers, $fields{$key};
+    }
+
+    # Push the headers record into the output array.
+    push @outputRecords, [@headers];
+
+    # Strip off the last @@@
+    $format = substr($format, 0, -3) . "@@@@@@\"";
+
+    dbprint("Query: " . $query . " " . $format);
+
+    my $qryResults = `$query $format`;
+
+    my @results = split /@@@@@@\n/, $qryResults;
+
+    my $arraySize = @results;
+
+    for my $record (@results) {
+
+        my @attrs = split /@@@/, $record;
+
+        # Convert the <void>'s to empty strings
+        for my $attrib (@attrs) {
+            if (length($attrib) > $maxStringLength) {
+                $attrib = substr($attrib, 0, $maxStringLength);
+            }
+            if ($attrib eq "<void>") {
+                $attrib = "";
+            }
+        }
+
+        # Push the record into the output array.
+        push @outputRecords, [@attrs];
+
+    }
+    my $newCSV = csv ({ binary => 1, in => \@outputRecords, out => $objectType . ".csv", sep_char => "," });
+
+    exportAttachments($objectType);
+
+}
+
+
 ##########################################################################################################
 #
 # Export the relationships to the CSV file
@@ -378,6 +507,54 @@ sub exportRelationships {
             chomp $child;
 
             push @outputRecords, [($parentId, $child, 'associated_task')];
+
+        }
+
+    }
+
+    # Query for CRs that have child cCRs
+    my $query3 = "ccm query -t problem -ns -u \"object_type=\'CR\' and has_associated_cr(cvtype=\'problem\' and object_type=\'cCr\')\"";
+
+    my @results3 = `$query3 $format`;
+
+    for my $record (@results3) {
+
+        chomp $record;
+
+        my ($cvid, $parentId) = split /@@@/, $record;
+
+        my $relateQry = "ccm query -ns -u -t problem \"is_associated_cr_of(cvid=" . $cvid . ")\" -f \"%created_in" . $dcm_del . "%problem_number\"";
+
+        my @children = `$relateQry`;
+
+        for my $child (@children) {
+            chomp $child;
+
+            push @outputRecords, [($parentId, $child, 'associated_cr')];
+
+        }
+
+    }
+
+    # Query for CRs that have child RCRs
+    my $query4 = "ccm query -t problem -ns -u \"object_type=\'CR\' and has_associated_rcr(cvtype=\'problem\' and object_type=\'cCr\')\"";
+
+    my @results4 = `$query4 $format`;
+
+    for my $record (@results3) {
+
+        chomp $record;
+
+        my ($cvid, $parentId) = split /@@@/, $record;
+
+        my $relateQry = "ccm query -ns -u -t problem \"is_associated_rcr_of(cvid=" . $cvid . ")\" -f \"%created_in" . $dcm_del . "%problem_number\"";
+
+        my @children = `$relateQry`;
+
+        for my $child (@children) {
+            chomp $child;
+
+            push @outputRecords, [($parentId, $child, 'associated_cr')];
 
         }
 
