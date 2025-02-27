@@ -393,7 +393,7 @@ sub exportRCRs {
 
     my @outputRecords = ();
 
-    my $query = "ccm query -t problem -ns -u \"crstatus match \'rcr_*\"\"";
+    my $query = "ccm query -t problem -ns -u \"crstatus match \'rcr_*\'\"";
     # Build the output statement
     my $format = "-f \"";
     my @headers = ();
@@ -466,6 +466,7 @@ sub exportRelationships {
     # Build the output statement
     my $format = "-f \"%cvid@@@%created_in" . $dcm_del. "%problem_number\"";
 
+    dbprint($query);
 
     my @results = `$query $format`;
 
@@ -476,6 +477,8 @@ sub exportRelationships {
         my ($cvid, $parentId) = split /@@@/, $record;
 
         my $relateQry = "ccm query -ns -u -t problem \"is_associated_ir_of(cvid=" . $cvid . ")\" -f \"%created_in" . $dcm_del . "%problem_number\"";
+
+        dbprint ($relateQry);
 
         my @children = `$relateQry`;
 
@@ -491,6 +494,8 @@ sub exportRelationships {
     # Query for IRs that have child Tasks
     my $query2 = "ccm query -t problem -ns -u \"object_type=\'IR\' and has_associated_task(cvtype=\'task\')\"";
 
+    dbprint($query2);
+
     my @results2 = `$query2 $format`;
 
     for my $record (@results2) {
@@ -500,6 +505,8 @@ sub exportRelationships {
         my ($cvid, $parentId) = split /@@@/, $record;
 
         my $relateQry = "ccm query -ns -u -t task \"is_associated_task_of(cvid=" . $cvid . ")\" -f \"%created_in" . $dcm_del . "%task_number\"";
+
+        dbprint ($relateQry);
 
         my @children = `$relateQry`;
 
@@ -513,7 +520,9 @@ sub exportRelationships {
     }
 
     # Query for CRs that have child cCRs
-    my $query3 = "ccm query -t problem -ns -u \"object_type=\'CR\' and has_associated_cr(cvtype=\'problem\' and object_type=\'cCr\')\"";
+    my $query3 = "ccm query -t problem -ns -u \"object_type=\'CR\' and has_associated_cr(cvtype=\'problem\' and object_type=\'cCR\')\"";
+
+    dbprint($query3);
 
     my @results3 = `$query3 $format`;
 
@@ -524,6 +533,8 @@ sub exportRelationships {
         my ($cvid, $parentId) = split /@@@/, $record;
 
         my $relateQry = "ccm query -ns -u -t problem \"is_associated_cr_of(cvid=" . $cvid . ")\" -f \"%created_in" . $dcm_del . "%problem_number\"";
+
+        dbprint ($relateQry);
 
         my @children = `$relateQry`;
 
@@ -537,7 +548,9 @@ sub exportRelationships {
     }
 
     # Query for CRs that have child RCRs
-    my $query4 = "ccm query -t problem -ns -u \"object_type=\'CR\' and has_associated_rcr(cvtype=\'problem\' and object_type=\'cCr\')\"";
+    my $query4 = "ccm query -t problem -ns -u \"object_type=\'CR\' and has_associated_rcr(cvtype=\'problem\')\"";
+
+    dbprint($query4);
 
     my @results4 = `$query4 $format`;
 
@@ -549,12 +562,14 @@ sub exportRelationships {
 
         my $relateQry = "ccm query -ns -u -t problem \"is_associated_rcr_of(cvid=" . $cvid . ")\" -f \"%created_in" . $dcm_del . "%problem_number\"";
 
+        dbprint ($relateQry);
+
         my @children = `$relateQry`;
 
         for my $child (@children) {
             chomp $child;
 
-            push @outputRecords, [($parentId, $child, 'associated_cr')];
+            push @outputRecords, [($parentId, $child, 'associated_rcr')];
 
         }
 
