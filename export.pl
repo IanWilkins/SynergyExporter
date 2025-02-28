@@ -198,7 +198,7 @@ my %RCRFields = (actual_duration => 'actual_duration',
                 problem_synopsis => 'com.ibm.team.workitem.attribute.summary',
                 sw_load => 'com.crane.attribute.sw_load',
                 transition_log => 'transitionlog',
-                IR_Static => 'com.ibm.team.workitem.attribute.workitemtype',
+                IR_STATIC => 'com.ibm.team.workitem.attribute.workitemtype',
                 verif_engr => 'verification_engineer',
                 verif_priority => 'verificationPriority',
                 RCR_STATIC => 'old_change_type');
