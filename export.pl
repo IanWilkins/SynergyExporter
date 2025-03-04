@@ -363,18 +363,30 @@ sub exportObjects {
 
         my @attrs = split /@@@/, $record;
 
-        # Convert the <void>'s to empty strings
+        my $attribIndex = 0;
+        my $attribId = '';
+        my @attribAttachments = ();
         for my $attrib (@attrs) {
+            # Save the id incase we need it to create attachments
+            if ($headers[$attribId] == 'problem_number') {
+                $attribId = $attrib;
+            }
             if (length($attrib) > $maxStringLength) {
+                # Add the attribute to the attachments
+                push @attribAttachments, [$headers[$attribIndex],$attrib];
                 $attrib = substr($attrib, 0, $maxStringLength);
             }
+            # Convert the <void>'s to empty strings
             if ($attrib eq "<void>") {
                 $attrib = "";
             }
+            $attribIndex++;
         }
 
         # Push the record into the output array.
         push @outputRecords, [@attrs];
+
+        processAttachments($attribId, \@attribAttachments);
 
     }
     my $newCSV = csv ({ binary => 1, in => \@outputRecords, out => $objectType . ".csv", sep_char => "," });
@@ -425,11 +437,11 @@ sub exportRCRs {
 
         my @attrs = split /@@@/, $record;
 
-        # Convert the <void>'s to empty strings
         for my $attrib (@attrs) {
             if (length($attrib) > $maxStringLength) {
                 $attrib = substr($attrib, 0, $maxStringLength);
             }
+            # Convert the <void>'s to empty strings
             if ($attrib eq "<void>") {
                 $attrib = "";
             }
@@ -579,13 +591,35 @@ sub exportRelationships {
 ##########################################################################################################
 #
 # Export the attachments
+sub processAttachments {
+
+    my ($attribId, $attribAttachments) = @_;
+
+    my $current_dir = cwd;
+
+    chdir "attachments";
+
+    make_path ($attribId);
+
+    chdir $attribId;
+
+    for my $record (@$attribAttachments) {
+        open(FH, '>', @$record[0] . ".txt") or die $!;
+        print FH @$record[1];
+        close(FH);
+    }
+
+    chdir $current_dir;
+}
+
+##########################################################################################################
+#
+# Export the attachments
 sub exportAttachments {
 
     my ($objectType) = @_;
 
     my $current_dir = cwd;
-
-    mkdir "attachments";
 
     chdir $current_dir . $subdir . "attachments";
 
@@ -599,7 +633,7 @@ sub exportAttachments {
 
         chomp $record;
         my ($cvid, $id) = split /@@@/, $record;
-        mkdir $id;
+        make_path($id);
         chdir $id;
 
         my $attachQuery = "ccm query -ns -u \"is_attachment_of(cvid=" . $cvid . ")\" -f \"%objectname@@@%attachment_name\"";
@@ -697,6 +731,7 @@ sub initialize {
         make_path $exportDir;
         chdir $exportDir;
     }
+    make_path("attachments");
 
     eval
     {
