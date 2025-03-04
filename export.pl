@@ -386,8 +386,8 @@ sub exportObjects {
         # Push the record into the output array.
         push @outputRecords, [@attrs];
 
-	if (scalar(@attribAttachments) > 0) {
-	    processAttachments($attribId, \@attribAttachments);
+        if (scalar(@attribAttachments) > 0) {
+            processAttachments($attribId, \@attribAttachments);
         }
 
     }
@@ -439,18 +439,32 @@ sub exportRCRs {
 
         my @attrs = split /@@@/, $record;
 
+        my $attribIndex = 0;
+        my $attribId = '';
+        my @attribAttachments = ();
         for my $attrib (@attrs) {
+            # Save the id incase we need it to create attachments
+            if ($headers[$attribIndex] eq 'oldid') {
+                $attribId = $attrib;
+            }
             if (length($attrib) > $maxStringLength) {
+                # Add the attribute to the attachments
+                push @attribAttachments, [$headers[$attribIndex],$attrib];
                 $attrib = substr($attrib, 0, $maxStringLength);
             }
             # Convert the <void>'s to empty strings
             if ($attrib eq "<void>") {
                 $attrib = "";
             }
+            $attribIndex++;
         }
 
         # Push the record into the output array.
         push @outputRecords, [@attrs];
+
+        if (scalar(@attribAttachments) > 0) {
+            processAttachments($attribId, \@attribAttachments);
+        }
 
     }
     my $newCSV = csv ({ binary => 1, in => \@outputRecords, out => $objectType . ".csv", sep_char => "," });
