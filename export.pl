@@ -2,11 +2,11 @@
 #
 =head1 NAME
 
-    CRExport.pl
+    export.pl
 
 =head1 SYNOPSIS
 
-    perl CRExport.pl
+    perl export.pl
 
     Options:
 
@@ -689,6 +689,9 @@ sub exportTasks {
     for my $key (sort keys(%TaskFields)) {
         if ($key eq "task_number") {
             $format .= "%created_in" . $dcm_del . "%" . $key . "@@@";
+        } elsif ($key =~ /_STATIC$/) {
+            # Not searching for the field just statically mapping
+            $format .= substr($key, 0, -7) . "@@@"
         } else {
             $format .= "%" . $key . "@@@";
         }
