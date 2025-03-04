@@ -368,7 +368,7 @@ sub exportObjects {
         my @attribAttachments = ();
         for my $attrib (@attrs) {
             # Save the id incase we need it to create attachments
-            if ($headers[$attribId] == 'problem_number') {
+            if ($headers[$attribIndex] eq 'oldid') {
                 $attribId = $attrib;
             }
             if (length($attrib) > $maxStringLength) {
@@ -386,7 +386,9 @@ sub exportObjects {
         # Push the record into the output array.
         push @outputRecords, [@attrs];
 
-        processAttachments($attribId, \@attribAttachments);
+	if (scalar(@attribAttachments) > 0) {
+	    processAttachments($attribId, \@attribAttachments);
+        }
 
     }
     my $newCSV = csv ({ binary => 1, in => \@outputRecords, out => $objectType . ".csv", sep_char => "," });
