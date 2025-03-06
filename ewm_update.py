@@ -129,7 +129,7 @@ def fetchCrossReference():
     cmdOptions += "projectArea=\"" + args.projectArea + "\" "
     cmdOptions += "exportFile=\"" + crossRefFile + "\" "
     cmdOptions += "query=\"" + args.queryName + "\" "
-    cmdOptions += "columns=\"Old ID,Id,Type\" "
+    cmdOptions += "columns=\"Old ID,Id,Type, Task Type\" "
     cmdOptions += " /asrtceclipse"
 
     try:
@@ -145,13 +145,18 @@ def loadCrossReference():
     print ("Parsing the result of the Query")
     global crossReference
     crossReference = {}
+    global taskCrossReference
+    taskCrossReference = {}
 
     csvFile = open(crossRefFile, 'r')
     csv_reader = csv.DictReader((line.replace('\0','') for line in csvFile), delimiter=";")
 
     for line in csv_reader:
         debugPrint(line)
-        crossReference[line["Old ID"]] = [line["Id"], line["Type"]]
+        if line["Task Type"] == "Regular Task":
+            taskCrossReference[line["Old ID"]] = [line["Id"], line["Type"]]
+        else:
+            crossReference[line["Old ID"]] = [line["Id"], line["Type"]]
 
     csvFile.close()
 
@@ -230,7 +235,20 @@ def loadLinks():
 
     # Load the links cross reference
     for line in csv_reader:
-        links[line["parent"]].add(line["child"])
+        if not line["parent"] in crossReference:
+            print("WARNING -- Unable to find EWM Id for Parent: " + line["parent"] + " -- Skipping this record")
+            continue
+
+        if line["relationship"] == "associated_task":
+            if not line["child"] in taskCrossReference:
+                print("WARNING -- Unable to find EWM Id for Task: " + line["child"] + " -- Skipping this record")
+                continue
+            links[crossReference[line["parent"]][0]].add(taskCrossReference[line["child"]][0])
+        else:
+            if not line["child"] in crossReference:
+                print("WARNING -- Unable to find EWM Id for Child: " + line["child"] + " -- Skipping this record")
+                continue
+            links[crossReference[line["parent"]][0]].add(crossReference[line["child"]][0])
 
     csvFile.close()
 
@@ -253,16 +271,11 @@ def createLinks(links):
     # id="289"
     # @link_child=id1|id2|id3
 
-    # Loop through the attachments
-    for oldId in links:
-        if not oldId in crossReference:
-            print("WARNING -- Unable to find EWM Id for Parent: " + oldId + " -- Skipping this record")
-            continue
+    # Loop through the links
+    for ewmId in links:
 
-        ewmId = crossReference[oldId][0]
-
-        print (f"Creating Child Links for {oldId} ({ewmId})")
-        children = links[oldId]
+        print (f"Creating Child Links for {ewmId}")
+        children = links[ewmId]
 
         # Create the run the attachments commands
 
@@ -273,10 +286,7 @@ def createLinks(links):
         cmdOptions += "@link_child=\""
         # Build the attachment bit
         for childId in children:
-            if not childId in crossReference:
-                print("WARNING -- Unable to find EWM Id for Child: " + childId + " -- Skipping this record")
-                continue
-            cmdOptions += crossReference[childId][0] + "|"
+            cmdOptions += childId + "|"
 
         cmdOptions = cmdOptions[:-1]
         cmdOptions += "\""

@@ -332,6 +332,7 @@ sub exportObjects {
     # Build the output statement
     my $format = "-f \"";
     my @headers = ();
+    my @attribs = ();
 
     for my $key (sort keys(%fields)) {
         if ($key eq "problem_number") {
@@ -343,6 +344,7 @@ sub exportObjects {
             $format .= "%" . $key . "@@@";
         }
         push @headers, $fields{$key};
+        push @attribs, $key;
     }
 
     # Push the headers record into the output array.
@@ -373,7 +375,7 @@ sub exportObjects {
             }
             if (length($attrib) > $maxStringLength) {
                 # Add the attribute to the attachments
-                push @attribAttachments, [$headers[$attribIndex],$attrib];
+                push @attribAttachments, [$attribs[$attribIndex],$attrib];
                 $attrib = substr($attrib, 0, $maxStringLength);
             }
             # Convert the <void>'s to empty strings
