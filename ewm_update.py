@@ -288,7 +288,7 @@ def createLinks(links, linkType):
     # Loop through the links
     for ewmId in links:
 
-        print (f"Creating Child Links for {ewmId}")
+        print (f"Creating ({linkType}) Links for {ewmId}")
         children = links[ewmId]
 
         # Create the run the attachments commands
