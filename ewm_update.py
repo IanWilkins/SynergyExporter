@@ -15,7 +15,7 @@
 # Define Imports
 import argparse
 import os
-from re import I
+from re import A, I
 import sys
 import csv
 import collections
@@ -229,6 +229,8 @@ def loadLinks():
     csvFilePath = os.path.join(args.sourceDir, "relationships.csv")
     print (f"Processing Link file: {csvFilePath}")
     links = collections.defaultdict(set)
+    associatedLinks = collections.defaultdict(set)
+    children = {}
 
     csvFile = open(csvFilePath, 'r')
     csv_reader = csv.DictReader(csvFile, delimiter=",")
@@ -243,20 +245,32 @@ def loadLinks():
             if not line["child"] in taskCrossReference:
                 print("WARNING -- Unable to find EWM Id for Task: " + line["child"] + " -- Skipping this record")
                 continue
-            links[crossReference[line["parent"]][0]].add(taskCrossReference[line["child"]][0])
+            if taskCrossReference[line["child"]][0] not in children:
+                # New child add to list
+                children[taskCrossReference[line["child"]][0]] = crossReference[line["parent"]][0]
+                links[crossReference[line["parent"]][0]].add(taskCrossReference[line["child"]][0])
+            else:
+                print(f"WARNING -- Task: {line['child']} -- Already has a parent, using related link instead")
+                associatedLinks[crossReference[line["parent"]][0]].add(taskCrossReference[line["child"]][0])
         else:
             if not line["child"] in crossReference:
                 print("WARNING -- Unable to find EWM Id for Child: " + line["child"] + " -- Skipping this record")
                 continue
-            links[crossReference[line["parent"]][0]].add(crossReference[line["child"]][0])
+            if crossReference[line["child"]][0] not in children:
+                # New child add to list
+                children[crossReference[line["child"]][0]] = crossReference[line["parent"]][0]
+                links[crossReference[line["parent"]][0]].add(crossReference[line["child"]][0])
+            else:
+                print(f"WARNING -- Child: {line['child']} -- Already has a parent, using related link instead")
+                associatedLinks[crossReference[line["parent"]][0]].add(crossReference[line["child"]][0])
 
     csvFile.close()
 
     debugPrint(links)
 
-    return links
+    return links, associatedLinks
 
-def createLinks(links):
+def createLinks(links, linkType):
     debugPrint("Starting createLinks")
 
     # Setup command path
@@ -274,7 +288,7 @@ def createLinks(links):
     # Loop through the links
     for ewmId in links:
 
-        print (f"Creating Child Links for {ewmId}")
+        print (f"Creating ({linkType}) Links for {ewmId}")
         children = links[ewmId]
 
         # Create the run the attachments commands
@@ -283,7 +297,7 @@ def createLinks(links):
         cmdOptions += "user=\"" + args.user + "\" "
         cmdOptions += "password=\"" + args.password + "\" "
         cmdOptions += "id=\"" + ewmId + "\" "
-        cmdOptions += "@link_child=\""
+        cmdOptions += "@" + linkType + "=\""
         # Build the attachment bit
         for childId in children:
             cmdOptions += childId + "|"
@@ -331,8 +345,9 @@ def main():
         loadAttachments(attachments)
 
     if (not args.skipLinks):
-        links = loadLinks()
-        createLinks(links)
+        links, associatedLinks = loadLinks()
+        createLinks(links, 'link_child')
+        createLinks(associatedLinks, 'link_related')
 
 
 
